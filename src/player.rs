@@ -1,7 +1,7 @@
 use crate::action::{Action, Resource};
 use crate::game::Play;
 use rand;
-use rand::seq::{IteratorRandom, SliceRandom};
+use rand::seq::IteratorRandom;
 use std::io;
 
 pub struct CLIPlayer;
@@ -31,7 +31,7 @@ impl Play for BotPlayer {
     fn get_action(&self, state: &Resource, other_state: &Resource) -> Action {
         let mut rng = rand::thread_rng();
         let sensible_actions = self.list_sensible_actions(&state, &other_state);
-        sensible_actions.into_iter().choose(&mut rng).unwrap()
+        sensible_actions.into_iter().choose(&mut rng).unwrap_or(Action::Guahao)
     }
 }
 
