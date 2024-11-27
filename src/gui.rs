@@ -36,6 +36,33 @@ impl eframe::App for GUIApp {
 }
 
 impl GUIApp {
+    fn new(
+        cc: &eframe::CreationContext<'_>,
+        state_receiver: mpsc::Receiver<[[i8; 3]; 2]>,
+        action_sender: mpsc::Sender<Action>,
+    ) -> Self {
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            "chinese_font".to_owned(),
+            egui::FontData::from_static(include_bytes!("../fonts/NotoSansSC-Regular.otf")),
+        );
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "chinese_font".to_owned());
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .push("chinese_font".to_owned());
+        cc.egui_ctx.set_fonts(fonts);
+        Self {
+            state_receiver,
+            action_sender,
+        }
+    }
+
     pub fn run_gui(state_receiver: mpsc::Receiver<[[i8; 3]; 2]>, action_sender: mpsc::Sender<Action>) {
         // let event_loop_builder: Option<EventLoopBuilderHook> = Some(Box::new(|event_loop_builder| {
         //     event_loop_builder.with_any_thread(true);
@@ -45,32 +72,10 @@ impl GUIApp {
             viewport: egui::ViewportBuilder::default().with_inner_size((400.0, 400.0)),
             ..eframe::NativeOptions::default()
         };
-        let gui_app = GUIApp {
-            state_receiver,
-            action_sender,
-        };
         eframe::run_native(
             "GUI Player",
             native_options,
-            Box::new(|cc| {
-                let mut fonts = egui::FontDefinitions::default();
-                fonts.font_data.insert(
-                    "chinese_font".to_owned(),
-                    egui::FontData::from_static(include_bytes!("../fonts/NotoSansSC-Regular.otf")),
-                );
-                fonts
-                    .families
-                    .entry(egui::FontFamily::Proportional)
-                    .or_default()
-                    .insert(0, "chinese_font".to_owned());
-                fonts
-                    .families
-                    .entry(egui::FontFamily::Monospace)
-                    .or_default()
-                    .push("chinese_font".to_owned());
-                cc.egui_ctx.set_fonts(fonts);
-                Ok(Box::new(gui_app))
-            }),
+            Box::new(|cc| Ok(Box::new(GUIApp::new(cc, state_receiver, action_sender)))),
         )
         .unwrap();
     }
