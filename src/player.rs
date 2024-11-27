@@ -3,6 +3,35 @@ use crate::game::Play;
 use rand;
 use rand::seq::IteratorRandom;
 use std::io;
+use std::sync::mpsc;
+// use std::thread;
+
+pub struct GUIPlayer {
+    state_sender: mpsc::Sender<[Resource; 2]>,
+    action_receiver: mpsc::Receiver<Action>,
+}
+
+impl Play for GUIPlayer {
+    fn get_action(&self, state: &Resource, other_state: &Resource) -> Action {
+        match self.state_sender.send([*state, *other_state]) {
+            Ok(()) => self.action_receiver.recv().unwrap_or(Action::Guahao),
+            Err(_) => Action::Guahao,
+        }
+    }
+}
+
+impl GUIPlayer {
+    pub fn new() -> (Self, mpsc::Receiver<[Resource; 2]>, mpsc::Sender<Action>) {
+        let (state_sender, state_receiver) = mpsc::channel::<[Resource; 2]>();
+        let (action_sender, action_receiver) = mpsc::channel::<Action>();
+        let gui_player = Self {
+            state_sender,
+            action_receiver,
+        };
+        // thread::spawn(|| GUIApp::run_gui(state_receiver, action_sender));
+        (gui_player, state_receiver, action_sender)
+    }
+}
 
 pub struct CLIPlayer;
 
@@ -13,13 +42,8 @@ impl Play for CLIPlayer {
             let mut guess = String::new();
             io::stdin().read_line(&mut guess).expect("读取命令行输入失败");
             match guess.trim().parse::<Action>() {
-                Ok(action) => {
-                    return action;
-                }
-                Err(_) => {
-                    println!("请输入合法动作");
-                    continue;
-                }
+                Ok(action) => return action,
+                Err(_) => println!("请输入合法动作"),
             };
         }
     }

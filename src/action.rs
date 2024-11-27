@@ -45,7 +45,7 @@ impl fmt::Display for Action {
             Action::Quanfang => "全防",
             Action::Fantan => "反弹",
         };
-        write!(f, "【{}】", &name)
+        write!(f, "{}", &name)
     }
 }
 
