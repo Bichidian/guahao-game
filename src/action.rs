@@ -2,6 +2,9 @@ use std::{fmt, str};
 
 pub type Resource = [i8; 3];
 
+pub const INIT_STATE: Resource = [0, 1, 1];
+
+#[derive(Clone)]
 pub enum Action {
     Guahao,
     Attack(u8),

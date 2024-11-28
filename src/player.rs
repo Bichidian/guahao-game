@@ -1,28 +1,43 @@
 use crate::action::{Action, Resource};
-use crate::game::Play;
+use crate::game::{Play, RoundOutcome};
 use rand;
 use rand::seq::IteratorRandom;
 use std::io;
 use std::sync::mpsc;
 // use std::thread;
 
+pub struct GameFeedback {
+    pub state: Resource,
+    pub other_state: Resource,
+    pub other_action: Action,
+    pub outcome: RoundOutcome,
+}
+
 pub struct GUIPlayer {
-    state_sender: mpsc::Sender<[Resource; 2]>,
+    state_sender: mpsc::Sender<GameFeedback>,
     action_receiver: mpsc::Receiver<Action>,
 }
 
 impl Play for GUIPlayer {
-    fn get_action(&self, state: &Resource, other_state: &Resource) -> Action {
-        match self.state_sender.send([*state, *other_state]) {
-            Ok(()) => self.action_receiver.recv().unwrap_or(Action::Guahao),
-            Err(_) => Action::Guahao,
-        }
+    fn get_action(&self, _state: &Resource, _other_state: &Resource) -> Action {
+        self.action_receiver.recv().unwrap_or(Action::Guahao)
+    }
+
+    fn send_state(&self, state: &Resource, other_state: &Resource, other_action: &Action, outcome: &RoundOutcome) {
+        self.state_sender
+            .send(GameFeedback {
+                state: *state,
+                other_state: *other_state,
+                other_action: other_action.clone(),
+                outcome: outcome.clone(),
+            })
+            .unwrap_or_else(|_| eprintln!("玩家离线"));
     }
 }
 
 impl GUIPlayer {
-    pub fn new() -> (Self, mpsc::Receiver<[Resource; 2]>, mpsc::Sender<Action>) {
-        let (state_sender, state_receiver) = mpsc::channel::<[Resource; 2]>();
+    pub fn new() -> (Self, mpsc::Receiver<GameFeedback>, mpsc::Sender<Action>) {
+        let (state_sender, state_receiver) = mpsc::channel::<GameFeedback>();
         let (action_sender, action_receiver) = mpsc::channel::<Action>();
         let gui_player = Self {
             state_sender,
@@ -47,6 +62,8 @@ impl Play for CLIPlayer {
             };
         }
     }
+
+    fn send_state(&self, _state: &Resource, _other_state: &Resource, _other_action: &Action, _outcome: &RoundOutcome) {}
 }
 
 pub struct BotPlayer;
@@ -57,6 +74,8 @@ impl Play for BotPlayer {
         let sensible_actions = self.list_sensible_actions(&state, &other_state);
         sensible_actions.into_iter().choose(&mut rng).unwrap_or(Action::Guahao)
     }
+
+    fn send_state(&self, _state: &Resource, _other_state: &Resource, _other_action: &Action, _outcome: &RoundOutcome) {}
 }
 
 impl BotPlayer {
