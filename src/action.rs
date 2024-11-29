@@ -43,7 +43,13 @@ impl fmt::Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let name: &str = match &self {
             Action::Guahao => "挂号",
+            Action::Attack(1) => "喂药",
+            Action::Attack(2) => "打针",
+            Action::Attack(3) => "开刀",
             Action::Attack(n) => &format!("攻击{n}"),
+            Action::Defend(1) => "捂嘴",
+            Action::Defend(2) => "捂肩",
+            Action::Defend(3) => "捂腹",
             Action::Defend(n) => &format!("防御{n}"),
             Action::Quanfang => "全防",
             Action::Fantan => "反弹",

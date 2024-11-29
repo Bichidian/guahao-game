@@ -23,7 +23,6 @@ pub struct GUIApp {
 impl eframe::App for GUIApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("挂号游戏");
             if let Ok(game_feedback) = self.state_receiver.try_recv() {
                 self.state = game_feedback.state;
                 self.other_state = game_feedback.other_state;
@@ -34,38 +33,56 @@ impl eframe::App for GUIApp {
                     self.update_legal_actions();
                 }
             }
-            ui.label(format!(
-                "我方剩余：挂号{}，全防{}，反弹{}。对方剩余：挂号{}，全防{}，反弹{}。",
-                self.state[0],
-                self.state[1],
-                self.state[2],
-                self.other_state[0],
-                self.other_state[1],
-                self.other_state[2]
-            ));
-            if let (Some(action), Some(other_action)) = (self.action.as_ref(), self.other_action.as_ref()) {
-                ui.label(format!("我方出招：{}，对方出招：{}。", action, other_action));
-            } else {
-                ui.label("请出招");
-            }
-            match self.outcome {
-                RoundOutcome::Continue => ui.label("加油！"),
-                RoundOutcome::Win => ui.label("您赢了！"),
-                RoundOutcome::Lose => ui.label("您输了！"),
-            };
 
-            for (action, legality) in Self::ACTION_LIST.iter().zip(self.is_legal_action.iter()) {
-                if ui
-                    .add_enabled(self.is_active && *legality, egui::Button::new(action.to_string()))
-                    .clicked()
-                {
-                    self.action_sender.send(action.clone()).unwrap_or_else(|_| {
-                        eprintln!("游戏已关闭");
-                    });
-                    self.action = Some(action.clone());
-                    self.is_active = false;
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                ui.label(format!(
+                    "挂号{}，全防{}，反弹{}",
+                    self.other_state[0], self.other_state[1], self.other_state[2]
+                ));
+                if let Some(other_action) = self.other_action.as_ref() {
+                    ui.label(format!("{}", other_action));
+                } else {
+                    ui.label("");
                 }
-            }
+                if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
+                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - 20.0);
+                    ui.label(match self.outcome {
+                        RoundOutcome::Continue => unreachable!(),
+                        RoundOutcome::Win => "您赢了",
+                        RoundOutcome::Lose => "您输了",
+                    });
+                }
+            });
+
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                ui.allocate_ui_with_layout(
+                    [40.0 * 5. + 8.0 * 4., 43.0].into(),
+                    egui::Layout::left_to_right(egui::Align::TOP),
+                    |ui| {
+                        let mut action_legality_iter = Self::ACTION_LIST.iter().zip(self.is_legal_action.into_iter());
+                        if let Some((action, legality)) = action_legality_iter.next() {
+                            self.add_action_button(ui, action, legality, [40.0, 43.0]);
+                        }
+                        while let (Some((action1, legality1)), Some((action2, legality2))) =
+                            (action_legality_iter.next(), action_legality_iter.next())
+                        {
+                            ui.vertical(|ui| {
+                                self.add_action_button(ui, action1, legality1, [40.0, 20.0]);
+                                self.add_action_button(ui, action2, legality2, [40.0, 20.0]);
+                            });
+                        }
+                    },
+                );
+                ui.label(format!(
+                    "挂号{}，全防{}，反弹{}",
+                    self.state[0], self.state[1], self.state[2],
+                ));
+                if let Some(action) = self.action.as_ref() {
+                    ui.label(format!("{}", action));
+                } else {
+                    ui.label("请出招");
+                }
+            });
         });
     }
 }
@@ -74,13 +91,13 @@ impl GUIApp {
     const ACTION_LIST: [Action; 9] = [
         Action::Guahao,
         Action::Attack(1),
-        Action::Attack(2),
-        Action::Attack(3),
         Action::Defend(1),
+        Action::Attack(2),
         Action::Defend(2),
+        Action::Attack(3),
         Action::Defend(3),
-        Action::Quanfang,
         Action::Fantan,
+        Action::Quanfang,
     ];
 
     fn update_legal_actions(&mut self) {
@@ -94,6 +111,18 @@ impl GUIApp {
                 }
             }
         }
+    }
+
+    fn add_action_button(&mut self, ui: &mut egui::Ui, action: &Action, legality: bool, size: impl Into<egui::Vec2>) {
+        ui.add_enabled_ui(self.is_active && legality, |ui| {
+            if ui.add_sized(size, egui::Button::new(action.to_string())).clicked() {
+                self.action_sender.send(action.clone()).unwrap_or_else(|_| {
+                    eprintln!("游戏已关闭");
+                });
+                self.action = Some(action.clone());
+                self.is_active = false;
+            }
+        });
     }
 
     fn new(state_receiver: mpsc::Receiver<GameFeedback>, action_sender: mpsc::Sender<Action>) -> Self {
@@ -136,13 +165,14 @@ impl GUIApp {
         // }));
         let native_options = eframe::NativeOptions {
             // event_loop_builder,
-            viewport: egui::ViewportBuilder::default().with_inner_size((400.0, 400.0)),
+            viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 600.0)),
             ..eframe::NativeOptions::default()
         };
         eframe::run_native(
             "挂号游戏",
             native_options,
             Box::new(|cc| {
+                cc.egui_ctx.set_zoom_factor(2.0);
                 Self::set_font(cc, include_bytes!("../fonts/NotoSansSC-Regular.otf"));
                 Ok(Box::new(Self::new(state_receiver, action_sender)))
             }),
