@@ -1,8 +1,8 @@
 use crate::action::{Action, Resource, INIT_STATE};
 
 pub trait Play {
-    fn get_action(&self, state: &Resource, other_state: &Resource) -> Action;
-    fn send_state(&self, state: &Resource, other_state: &Resource, other_action: &Action, outcome: &RoundOutcome);
+    fn get_action(&self, state: Resource, other_state: Resource) -> Action;
+    fn send_state(&self, game_info: GameInfo);
 }
 
 pub struct Game<T: Play, U: Play> {
@@ -12,7 +12,7 @@ pub struct Game<T: Play, U: Play> {
     player2: U,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum RoundOutcome {
     Win,
     Lose,
@@ -31,6 +31,13 @@ impl std::ops::Neg for RoundOutcome {
     }
 }
 
+pub struct GameInfo {
+    pub state: Resource,
+    pub other_state: Resource,
+    pub other_action: Action,
+    pub outcome: RoundOutcome,
+}
+
 impl<T, U> Game<T, U>
 where
     T: Play,
@@ -47,30 +54,43 @@ where
 
     pub fn run_game(&mut self) {
         loop {
-            let action1 = self.player1.get_action(&self.state1, &self.state2);
-            let action2 = self.player2.get_action(&self.state2, &self.state1);
-            let outcome = self.update_state(&action1, &action2); // From player1's perspective
-            self.player1.send_state(&self.state1, &self.state2, &action2, &outcome);
-            self.player2
-                .send_state(&self.state2, &self.state1, &action1, &-outcome.clone());
+            let action1 = self.player1.get_action(self.state1, self.state2);
+            let action2 = self.player2.get_action(self.state2, self.state1);
+            let outcome = self.update_state(action1, action2); // From player1's perspective
+
+            let game_info1 = GameInfo {
+                state: self.state1,
+                other_state: self.state2,
+                other_action: action2,
+                outcome: outcome,
+            };
+            let game_info2 = GameInfo {
+                state: self.state2,
+                other_state: self.state1,
+                other_action: action1,
+                outcome: -outcome,
+            };
+
+            self.player1.send_state(game_info1);
+            self.player2.send_state(game_info2);
             if matches!(outcome, RoundOutcome::Win | RoundOutcome::Lose) {
                 break;
             }
         }
     }
 
-    fn update_state(&mut self, action1: &Action, action2: &Action) -> RoundOutcome {
+    fn update_state(&mut self, action1: Action, action2: Action) -> RoundOutcome {
         let cost1 = action1.get_cost();
-        for (s, c) in self.state1.iter_mut().zip(cost1.iter()) {
-            *s -= *c;
+        for (s, c) in self.state1.iter_mut().zip(cost1.into_iter()) {
+            *s -= c;
             if *s < 0 {
                 return RoundOutcome::Lose;
             }
         }
 
         let cost2 = action2.get_cost();
-        for (s, c) in self.state2.iter_mut().zip(cost2.iter()) {
-            *s -= *c;
+        for (s, c) in self.state2.iter_mut().zip(cost2.into_iter()) {
+            *s -= c;
             if *s < 0 {
                 return RoundOutcome::Win;
             }

@@ -1,43 +1,31 @@
 use crate::action::{Action, Resource};
-use crate::game::{Play, RoundOutcome};
+use crate::game::{GameInfo, Play, RoundOutcome};
 use rand;
 use rand::seq::IteratorRandom;
 use std::io;
 use std::sync::mpsc;
 // use std::thread;
 
-pub struct GameFeedback {
-    pub state: Resource,
-    pub other_state: Resource,
-    pub other_action: Action,
-    pub outcome: RoundOutcome,
-}
-
 pub struct GUIPlayer {
-    state_sender: mpsc::Sender<GameFeedback>,
+    state_sender: mpsc::Sender<GameInfo>,
     action_receiver: mpsc::Receiver<Action>,
 }
 
 impl Play for GUIPlayer {
-    fn get_action(&self, _state: &Resource, _other_state: &Resource) -> Action {
+    fn get_action(&self, _state: Resource, _other_state: Resource) -> Action {
         self.action_receiver.recv().unwrap_or(Action::Guahao)
     }
 
-    fn send_state(&self, state: &Resource, other_state: &Resource, other_action: &Action, outcome: &RoundOutcome) {
+    fn send_state(&self, game_info: GameInfo) {
         self.state_sender
-            .send(GameFeedback {
-                state: state.clone(),
-                other_state: other_state.clone(),
-                other_action: other_action.clone(),
-                outcome: outcome.clone(),
-            })
+            .send(game_info)
             .unwrap_or_else(|_| eprintln!("玩家离线"));
     }
 }
 
 impl GUIPlayer {
-    pub fn new() -> (Self, mpsc::Receiver<GameFeedback>, mpsc::Sender<Action>) {
-        let (state_sender, state_receiver) = mpsc::channel::<GameFeedback>();
+    pub fn new() -> (Self, mpsc::Receiver<GameInfo>, mpsc::Sender<Action>) {
+        let (state_sender, state_receiver) = mpsc::channel::<GameInfo>();
         let (action_sender, action_receiver) = mpsc::channel::<Action>();
         let gui_player = Self {
             state_sender,
@@ -51,7 +39,7 @@ impl GUIPlayer {
 pub struct CLIPlayer;
 
 impl Play for CLIPlayer {
-    fn get_action(&self, _state: &Resource, _other_state: &Resource) -> Action {
+    fn get_action(&self, _state: Resource, _other_state: Resource) -> Action {
         println!("请输入动作");
         loop {
             let mut guess = String::new();
@@ -66,11 +54,11 @@ impl Play for CLIPlayer {
         }
     }
 
-    fn send_state(&self, state: &Resource, other_state: &Resource, other_action: &Action, outcome: &RoundOutcome) {
-        println!("对方出招：【{}】", other_action);
-        println!("我方剩余：{}", state);
-        println!("对方剩余：{}", other_state);
-        match outcome {
+    fn send_state(&self, game_info: GameInfo) {
+        println!("对方出招：【{}】", game_info.other_action);
+        println!("我方剩余：{}", game_info.state);
+        println!("对方剩余：{}", game_info.other_state);
+        match game_info.outcome {
             RoundOutcome::Win => println!("您赢了"),
             RoundOutcome::Lose => println!("您输了"),
             RoundOutcome::Continue => {}
@@ -81,17 +69,17 @@ impl Play for CLIPlayer {
 pub struct BotPlayer;
 
 impl Play for BotPlayer {
-    fn get_action(&self, state: &Resource, other_state: &Resource) -> Action {
+    fn get_action(&self, state: Resource, other_state: Resource) -> Action {
         let mut rng = rand::thread_rng();
-        let sensible_actions = self.list_sensible_actions(&state, &other_state);
+        let sensible_actions = self.list_sensible_actions(state, other_state);
         sensible_actions.into_iter().choose(&mut rng).unwrap_or(Action::Guahao)
     }
 
-    fn send_state(&self, _state: &Resource, _other_state: &Resource, _other_action: &Action, _outcome: &RoundOutcome) {}
+    fn send_state(&self, _game_info: GameInfo) {}
 }
 
 impl BotPlayer {
-    fn list_sensible_actions(&self, state: &Resource, other_state: &Resource) -> Vec<Action> {
+    fn list_sensible_actions(&self, state: Resource, other_state: Resource) -> Vec<Action> {
         let mut sensible_actions = vec![Action::Guahao];
         for a in 1..=state[0] {
             sensible_actions.push(Action::Attack(a as u8));

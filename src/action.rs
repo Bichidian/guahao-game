@@ -2,7 +2,7 @@ use std::{fmt, ops, str};
 
 // pub type Resource = [i8; 3];
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Resource([i8; 3]);
 
 impl ops::Deref for Resource {
@@ -32,7 +32,7 @@ impl fmt::Display for Resource {
 
 pub const INIT_STATE: Resource = Resource { 0: [0, 1, 1] };
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Action {
     Guahao,
     Attack(u8),

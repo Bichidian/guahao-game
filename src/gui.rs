@@ -1,7 +1,6 @@
 use crate::{
     action::{Action, Resource, INIT_STATE},
-    game::RoundOutcome,
-    player::GameFeedback,
+    game::{GameInfo, RoundOutcome},
 };
 use eframe::egui;
 use std::sync::mpsc;
@@ -9,7 +8,7 @@ use std::sync::mpsc;
 // use winit::platform::wayland::EventLoopBuilderExtWayland;
 
 pub struct GUIApp {
-    state_receiver: mpsc::Receiver<GameFeedback>,
+    state_receiver: mpsc::Receiver<GameInfo>,
     action_sender: mpsc::Sender<Action>,
     is_active: bool,
     state: Resource,
@@ -23,11 +22,11 @@ pub struct GUIApp {
 impl eframe::App for GUIApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Ok(game_feedback) = self.state_receiver.try_recv() {
-                self.state = game_feedback.state;
-                self.other_state = game_feedback.other_state;
-                self.other_action = Some(game_feedback.other_action);
-                self.outcome = game_feedback.outcome;
+            if let Ok(game_info) = self.state_receiver.try_recv() {
+                self.state = game_info.state;
+                self.other_state = game_info.other_state;
+                self.other_action = Some(game_info.other_action);
+                self.outcome = game_info.outcome;
                 if matches!(self.outcome, RoundOutcome::Continue) {
                     self.is_active = true;
                     self.update_legal_actions();
@@ -56,7 +55,8 @@ impl eframe::App for GUIApp {
                     [40.0 * 5. + 8.0 * 4., 43.0].into(),
                     egui::Layout::left_to_right(egui::Align::TOP),
                     |ui| {
-                        let mut action_legality_iter = Self::ACTION_LIST.iter().zip(self.is_legal_action.into_iter());
+                        let mut action_legality_iter =
+                            Self::ACTION_LIST.into_iter().zip(self.is_legal_action.into_iter());
                         if let Some((action, legality)) = action_legality_iter.next() {
                             self.add_action_button(ui, action, legality, [40.0, 43.0]);
                         }
@@ -107,19 +107,19 @@ impl GUIApp {
         }
     }
 
-    fn add_action_button(&mut self, ui: &mut egui::Ui, action: &Action, legality: bool, size: impl Into<egui::Vec2>) {
+    fn add_action_button(&mut self, ui: &mut egui::Ui, action: Action, legality: bool, size: impl Into<egui::Vec2>) {
         ui.add_enabled_ui(self.is_active && legality, |ui| {
             if ui.add_sized(size, egui::Button::new(action.to_string())).clicked() {
-                self.action_sender.send(action.clone()).unwrap_or_else(|_| {
+                self.action_sender.send(action).unwrap_or_else(|_| {
                     eprintln!("游戏已关闭");
                 });
-                self.action = Some(action.clone());
+                self.action = Some(action);
                 self.is_active = false;
             }
         });
     }
 
-    fn new(state_receiver: mpsc::Receiver<GameFeedback>, action_sender: mpsc::Sender<Action>) -> Self {
+    fn new(state_receiver: mpsc::Receiver<GameInfo>, action_sender: mpsc::Sender<Action>) -> Self {
         let mut gui_app = Self {
             state_receiver,
             action_sender,
@@ -153,7 +153,7 @@ impl GUIApp {
         cc.egui_ctx.set_fonts(fonts);
     }
 
-    pub fn run_gui(state_receiver: mpsc::Receiver<GameFeedback>, action_sender: mpsc::Sender<Action>) {
+    pub fn run_gui(state_receiver: mpsc::Receiver<GameInfo>, action_sender: mpsc::Sender<Action>) {
         // let event_loop_builder: Option<EventLoopBuilderHook> = Some(Box::new(|event_loop_builder| {
         //     event_loop_builder.with_any_thread(true);
         // }));
