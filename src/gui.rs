@@ -51,14 +51,16 @@ impl eframe::App for GUIApp {
             });
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                const BUTTON_SPACING: f32 = 5.0;
                 ui.allocate_ui_with_layout(
-                    [40.0 * 5. + 8.0 * 4., 43.0].into(),
+                    [40.0 * 5. + BUTTON_SPACING * 4., 40.0 + BUTTON_SPACING].into(),
                     egui::Layout::left_to_right(egui::Align::TOP),
                     |ui| {
+                        ui.style_mut().spacing.item_spacing = [BUTTON_SPACING, BUTTON_SPACING].into();
                         let mut action_legality_iter =
                             Self::ACTION_LIST.into_iter().zip(self.is_legal_action.into_iter());
                         if let Some((action, legality)) = action_legality_iter.next() {
-                            self.add_action_button(ui, action, legality, [40.0, 43.0]);
+                            self.add_action_button(ui, action, legality, [40.0, 40.0 + BUTTON_SPACING]);
                         }
                         while let (Some((action1, legality1)), Some((action2, legality2))) =
                             (action_legality_iter.next(), action_legality_iter.next())
@@ -108,7 +110,15 @@ impl GUIApp {
     }
 
     fn add_action_button(&mut self, ui: &mut egui::Ui, action: Action, legality: bool, size: impl Into<egui::Vec2>) {
+        let color = match action {
+            Action::Guahao => egui::Color32::LIGHT_BLUE,
+            Action::Attack(_) => egui::Color32::LIGHT_RED,
+            Action::Defend(_) => egui::Color32::LIGHT_GREEN,
+            Action::Fantan | Action::Quanfang => egui::Color32::GOLD,
+        };
         ui.add_enabled_ui(self.is_active && legality, |ui| {
+            ui.style_mut().visuals.widgets.inactive.fg_stroke.color = color;
+            ui.style_mut().visuals.widgets.inactive.bg_stroke = (1.0, color).into();
             if ui.add_sized(size, egui::Button::new(action.to_string())).clicked() {
                 self.action_sender.send(action).unwrap_or_else(|_| {
                     eprintln!("游戏已关闭");
