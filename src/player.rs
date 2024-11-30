@@ -26,8 +26,8 @@ impl Play for GUIPlayer {
     fn send_state(&self, state: &Resource, other_state: &Resource, other_action: &Action, outcome: &RoundOutcome) {
         self.state_sender
             .send(GameFeedback {
-                state: *state,
-                other_state: *other_state,
+                state: state.clone(),
+                other_state: other_state.clone(),
                 other_action: other_action.clone(),
                 outcome: outcome.clone(),
             })

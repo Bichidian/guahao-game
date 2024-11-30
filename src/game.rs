@@ -108,13 +108,7 @@ where
     fn broadcast(&self, action1: &Action, action2: &Action) {
         println!("玩家1出招：【{}】", action1);
         println!("玩家2出招：【{}】", action2);
-        println!(
-            "玩家1剩余：挂号{}，全防{}，反弹{}",
-            self.state1[0], self.state1[1], self.state1[2]
-        );
-        println!(
-            "玩家2剩余：挂号{}，全防{}，反弹{}",
-            self.state2[0], self.state2[1], self.state2[2]
-        );
+        println!("玩家1剩余：{}", self.state1);
+        println!("玩家2剩余：{}", self.state2);
     }
 }

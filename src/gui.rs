@@ -35,10 +35,7 @@ impl eframe::App for GUIApp {
             }
 
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(format!(
-                    "挂号{}，全防{}，反弹{}",
-                    self.other_state[0], self.other_state[1], self.other_state[2]
-                ));
+                ui.label(self.other_state.to_string());
                 if let Some(other_action) = self.other_action.as_ref() {
                     ui.label(format!("{}", other_action));
                 } else {
@@ -73,10 +70,7 @@ impl eframe::App for GUIApp {
                         }
                     },
                 );
-                ui.label(format!(
-                    "挂号{}，全防{}，反弹{}",
-                    self.state[0], self.state[1], self.state[2],
-                ));
+                ui.label(self.state.to_string());
                 if let Some(action) = self.action.as_ref() {
                     ui.label(format!("{}", action));
                 } else {

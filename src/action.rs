@@ -1,8 +1,36 @@
-use std::{fmt, str};
+use std::{fmt, ops, str};
 
-pub type Resource = [i8; 3];
+// pub type Resource = [i8; 3];
 
-pub const INIT_STATE: Resource = [0, 1, 1];
+#[derive(Clone)]
+pub struct Resource([i8; 3]);
+
+impl ops::Deref for Resource {
+    type Target = [i8; 3];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ops::DerefMut for Resource {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl From<[i8; 3]> for Resource {
+    fn from(value: [i8; 3]) -> Self {
+        Self { 0: value }
+    }
+}
+
+impl fmt::Display for Resource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "挂号{}，全防{}，反弹{}", self[0], self[1], self[2])
+    }
+}
+
+pub const INIT_STATE: Resource = Resource { 0: [0, 1, 1] };
 
 #[derive(Clone)]
 pub enum Action {
@@ -67,5 +95,6 @@ impl Action {
             Action::Quanfang => [0, 1, 0],
             Action::Fantan => [0, 0, 1],
         }
+        .into()
     }
 }
