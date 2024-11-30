@@ -1,7 +1,5 @@
 use std::{fmt, ops, str};
 
-// pub type Resource = [i8; 3];
-
 #[derive(Clone, Copy)]
 pub struct Resource([i8; 3]);
 

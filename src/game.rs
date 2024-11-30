@@ -5,11 +5,9 @@ pub trait Play {
     fn send_state(&self, game_info: GameInfo);
 }
 
-pub struct Game<T: Play, U: Play> {
+pub struct Game {
     state1: Resource,
     state2: Resource,
-    player1: T,
-    player2: U,
 }
 
 #[derive(Clone, Copy)]
@@ -38,24 +36,18 @@ pub struct GameInfo {
     pub outcome: RoundOutcome,
 }
 
-impl<T, U> Game<T, U>
-where
-    T: Play,
-    U: Play,
-{
-    pub fn new(player1: T, player2: U) -> Self {
+impl Game {
+    pub fn new() -> Self {
         Self {
             state1: INIT_STATE,
             state2: INIT_STATE,
-            player1: player1,
-            player2: player2,
         }
     }
 
-    pub fn run_game(&mut self) {
+    pub fn run_game(&mut self, player1: impl Play, player2: impl Play) {
         loop {
-            let action1 = self.player1.get_action(self.state1, self.state2);
-            let action2 = self.player2.get_action(self.state2, self.state1);
+            let action1 = player1.get_action(self.state1, self.state2);
+            let action2 = player2.get_action(self.state2, self.state1);
             let outcome = self.update_state(action1, action2); // From player1's perspective
 
             let game_info1 = GameInfo {
@@ -71,8 +63,8 @@ where
                 outcome: -outcome,
             };
 
-            self.player1.send_state(game_info1);
-            self.player2.send_state(game_info2);
+            player1.send_state(game_info1);
+            player2.send_state(game_info2);
             if matches!(outcome, RoundOutcome::Win | RoundOutcome::Lose) {
                 break;
             }

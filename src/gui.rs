@@ -36,7 +36,7 @@ impl eframe::App for GUIApp {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 ui.label(self.other_state.to_string());
                 if let Some(other_action) = self.other_action.as_ref() {
-                    ui.label(format!("{}", other_action));
+                    ui.label(other_action.to_string());
                 } else {
                     ui.label("");
                 }
@@ -72,7 +72,7 @@ impl eframe::App for GUIApp {
                 );
                 ui.label(self.state.to_string());
                 if let Some(action) = self.action.as_ref() {
-                    ui.label(format!("{}", action));
+                    ui.label(action.to_string());
                 } else {
                     ui.label("请出招");
                 }

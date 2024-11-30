@@ -10,7 +10,6 @@ use std::thread;
 
 fn main() {
     let (gui_player, state_receiver, action_sender) = GUIPlayer::new();
-    let mut game = Game::new(gui_player, BotPlayer);
-    thread::spawn(move || game.run_game());
+    thread::spawn(move || Game::new().run_game(gui_player, BotPlayer));
     GUIApp::run_gui(state_receiver, action_sender);
 }
