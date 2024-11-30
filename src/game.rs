@@ -53,13 +53,9 @@ where
             self.player1.send_state(&self.state1, &self.state2, &action2, &outcome);
             self.player2
                 .send_state(&self.state2, &self.state1, &action1, &-outcome.clone());
-            self.broadcast(&action1, &action2);
-            match outcome {
-                RoundOutcome::Win => println!("玩家1赢了！"),
-                RoundOutcome::Lose => println!("玩家2赢了！"),
-                RoundOutcome::Continue => continue,
+            if matches!(outcome, RoundOutcome::Win | RoundOutcome::Lose) {
+                break;
             }
-            break;
         }
     }
 
@@ -103,12 +99,5 @@ where
         } else {
             RoundOutcome::Continue
         }
-    }
-
-    fn broadcast(&self, action1: &Action, action2: &Action) {
-        println!("玩家1出招：【{}】", action1);
-        println!("玩家2出招：【{}】", action2);
-        println!("玩家1剩余：{}", self.state1);
-        println!("玩家2剩余：{}", self.state2);
     }
 }

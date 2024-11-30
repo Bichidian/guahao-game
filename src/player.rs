@@ -57,13 +57,25 @@ impl Play for CLIPlayer {
             let mut guess = String::new();
             io::stdin().read_line(&mut guess).expect("读取命令行输入失败");
             match guess.trim().parse::<Action>() {
-                Ok(action) => return action,
+                Ok(action) => {
+                    println!("我方出招：【{}】", action);
+                    return action;
+                }
                 Err(_) => println!("请输入合法动作"),
             };
         }
     }
 
-    fn send_state(&self, _state: &Resource, _other_state: &Resource, _other_action: &Action, _outcome: &RoundOutcome) {}
+    fn send_state(&self, state: &Resource, other_state: &Resource, other_action: &Action, outcome: &RoundOutcome) {
+        println!("对方出招：【{}】", other_action);
+        println!("我方剩余：{}", state);
+        println!("对方剩余：{}", other_state);
+        match outcome {
+            RoundOutcome::Win => println!("您赢了"),
+            RoundOutcome::Lose => println!("您输了"),
+            RoundOutcome::Continue => {}
+        }
+    }
 }
 
 pub struct BotPlayer;
