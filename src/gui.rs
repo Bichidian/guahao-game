@@ -3,7 +3,7 @@ use crate::{
     game::{GameInfo, RoundOutcome},
 };
 use eframe::egui;
-use std::sync::mpsc;
+use std::{collections::BTreeMap, sync::mpsc};
 // use eframe::EventLoopBuilderHook;
 // use winit::platform::wayland::EventLoopBuilderExtWayland;
 
@@ -68,26 +68,28 @@ impl eframe::App for GUIApp {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 Self::show_state(ui, self.other_state);
                 if let Some(other_action) = self.other_action {
-                    ui.label(other_action.to_string());
+                    ui.label(Self::create_text(&other_action.to_string(), "douyin", 20.0));
                 } else {
                     ui.label("");
                 }
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
-                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - 10.0);
-                    ui.label(match self.outcome {
+                    let font_size = 30.0;
+                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0);
+                    let text = match self.outcome {
                         RoundOutcome::Continue => unreachable!(),
-                        RoundOutcome::Win => "您赢了",
-                        RoundOutcome::Lose => "您输了",
-                    });
+                        RoundOutcome::Win => "胜",
+                        RoundOutcome::Lose => "负",
+                    };
+                    ui.label(Self::create_text(text, "wenkai", font_size));
                 }
             });
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                 Self::show_state(ui, self.state);
                 if let Some(action) = self.action {
-                    ui.label(action.to_string());
+                    ui.label(Self::create_text(&action.to_string(), "douyin", 20.0));
                 } else {
-                    ui.label("请出招");
+                    ui.label("");
                 }
             });
         });
@@ -127,10 +129,12 @@ impl GUIApp {
             Action::Defend(_) => egui::Color32::LIGHT_GREEN,
             Action::Fantan | Action::Quanfang => egui::Color32::GOLD,
         };
+        let text = Self::create_text(&action.to_string(), "noto", 12.5);
+
         ui.add_enabled_ui(self.is_active && legality, |ui| {
             ui.style_mut().visuals.widgets.inactive.fg_stroke.color = color;
             ui.style_mut().visuals.widgets.inactive.bg_stroke = (1.0, color).into();
-            if ui.add_sized(size, egui::Button::new(action.to_string())).clicked() {
+            if ui.add_sized(size, egui::Button::new(text)).clicked() {
                 self.action_sender.send(action).unwrap_or_else(|_| {
                     eprintln!("游戏已关闭");
                 });
@@ -141,7 +145,17 @@ impl GUIApp {
     }
 
     fn show_state(ui: &mut egui::Ui, state: Resource) {
-        ui.label(state.to_string());
+        ui.label(Self::create_text(
+            &format!("挂号{}        全防{}        反弹{}", state[0], state[1], state[2]),
+            "smiley",
+            12.5,
+        ));
+    }
+
+    fn create_text(text: &str, family: &str, size: f32) -> egui::RichText {
+        egui::RichText::new(text)
+            .family(egui::FontFamily::Name(family.into()))
+            .size(size)
     }
 
     fn new(state_receiver: mpsc::Receiver<GameInfo>, action_sender: mpsc::Sender<Action>) -> Self {
@@ -160,21 +174,28 @@ impl GUIApp {
         gui_app
     }
 
-    fn set_font(cc: &eframe::CreationContext<'_>, font: &'static [u8]) {
+    fn set_font(cc: &eframe::CreationContext<'_>) {
+        const NOTO: &[u8] = include_bytes!("../fonts/NotoSansSC-Regular.otf");
+        const SMILEY: &[u8] = include_bytes!("../fonts/SmileySans-Oblique.ttf");
+        const DOUYIN: &[u8] = include_bytes!("../fonts/DouyinSansBold.otf");
+        const WENKAI: &[u8] = include_bytes!("../fonts/lxgw-wenkai-gb-lite-v1.501/LXGWWenKaiGBLite-Medium.ttf");
+
         let mut fonts = egui::FontDefinitions::default();
-        fonts
-            .font_data
-            .insert("chinese_font".to_owned(), egui::FontData::from_static(font));
-        fonts
-            .families
-            .entry(egui::FontFamily::Proportional)
-            .or_default()
-            .insert(0, "chinese_font".to_owned());
-        fonts
-            .families
-            .entry(egui::FontFamily::Monospace)
-            .or_default()
-            .push("chinese_font".to_owned());
+        for (name, font) in [
+            ("noto", NOTO),
+            ("smiley", SMILEY),
+            ("douyin", DOUYIN),
+            ("wenkai", WENKAI),
+        ] {
+            fonts
+                .font_data
+                .insert(name.to_owned(), egui::FontData::from_static(font));
+
+            let mut newfam = BTreeMap::new();
+            newfam.insert(egui::FontFamily::Name(name.into()), vec![name.to_owned()]);
+            fonts.families.append(&mut newfam);
+        }
+
         cc.egui_ctx.set_fonts(fonts);
     }
 
@@ -192,7 +213,7 @@ impl GUIApp {
             native_options,
             Box::new(|cc| {
                 cc.egui_ctx.set_zoom_factor(2.0);
-                Self::set_font(cc, include_bytes!("../fonts/NotoSansSC-Regular.otf"));
+                Self::set_font(cc);
                 Ok(Box::new(Self::new(state_receiver, action_sender)))
             }),
         )
