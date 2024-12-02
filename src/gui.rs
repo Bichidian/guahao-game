@@ -67,8 +67,8 @@ impl eframe::App for GUIApp {
 
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 Self::show_state(ui, self.other_state);
-                if let Some(other_action) = self.other_action {
-                    ui.label(Self::create_text(&other_action.to_string(), "douyin", 20.0));
+                if let Some(action) = self.other_action {
+                    Self::show_action(ui, action);
                 } else {
                     ui.label("");
                 }
@@ -87,7 +87,7 @@ impl eframe::App for GUIApp {
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                 Self::show_state(ui, self.state);
                 if let Some(action) = self.action {
-                    ui.label(Self::create_text(&action.to_string(), "douyin", 20.0));
+                    Self::show_action(ui, action);
                 } else {
                     ui.label("");
                 }
@@ -144,11 +144,15 @@ impl GUIApp {
         });
     }
 
+    fn show_action(ui: &mut egui::Ui, action: Action) {
+        ui.label(Self::create_text(&action.to_string(), "smiley", 25.0));
+    }
+
     fn show_state(ui: &mut egui::Ui, state: Resource) {
         ui.label(Self::create_text(
-            &format!("挂号{}        全防{}        反弹{}", state[0], state[1], state[2]),
-            "smiley",
-            12.5,
+            &format!("挂号{}      全防{}      反弹{}", state[0], state[1], state[2]),
+            "wenkai",
+            15.0,
         ));
     }
 
@@ -178,7 +182,7 @@ impl GUIApp {
         const NOTO: &[u8] = include_bytes!("../fonts/NotoSansSC-Regular.otf");
         const SMILEY: &[u8] = include_bytes!("../fonts/SmileySans-Oblique.ttf");
         const DOUYIN: &[u8] = include_bytes!("../fonts/DouyinSansBold.otf");
-        const WENKAI: &[u8] = include_bytes!("../fonts/lxgw-wenkai-gb-lite-v1.501/LXGWWenKaiGBLite-Medium.ttf");
+        const WENKAI: &[u8] = include_bytes!("../fonts/lxgw-wenkai-gb-lite-v1.501/LXGWWenKaiMonoGBLite-Medium.ttf");
 
         let mut fonts = egui::FontDefinitions::default();
         for (name, font) in [
