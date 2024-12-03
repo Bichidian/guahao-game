@@ -20,6 +20,17 @@ pub struct GUIApp {
 
 impl eframe::App for GUIApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let Ok(game_info) = self.state_receiver.try_recv() {
+            self.state = game_info.state;
+            self.other_state = game_info.other_state;
+            self.other_action = Some(game_info.other_action);
+            self.outcome = game_info.outcome;
+            if matches!(self.outcome, RoundOutcome::Continue) {
+                self.is_active = true;
+                self.update_legal_actions();
+            }
+        }
+
         egui::TopBottomPanel::bottom("button_panel")
             .frame(egui::Frame {
                 inner_margin: egui::Margin::symmetric(8.0, 8.0),
@@ -27,50 +38,16 @@ impl eframe::App for GUIApp {
                 ..Default::default()
             })
             .show(ctx, |ui| {
-                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                    const BUTTON_SPACING: f32 = 5.0;
-                    ui.allocate_ui_with_layout(
-                        [40.0 * 5. + BUTTON_SPACING * 4., 40.0 + BUTTON_SPACING].into(),
-                        egui::Layout::left_to_right(egui::Align::TOP),
-                        |ui| {
-                            ui.style_mut().spacing.item_spacing = [BUTTON_SPACING, BUTTON_SPACING].into();
-                            let mut action_legality_iter =
-                                Self::ACTION_LIST.into_iter().zip(self.is_legal_action.into_iter());
-                            if let Some((action, legality)) = action_legality_iter.next() {
-                                self.add_action_button(ui, action, legality, [40.0, 40.0 + BUTTON_SPACING]);
-                            }
-                            while let (Some((action1, legality1)), Some((action2, legality2))) =
-                                (action_legality_iter.next(), action_legality_iter.next())
-                            {
-                                ui.vertical(|ui| {
-                                    self.add_action_button(ui, action1, legality1, [40.0, 20.0]);
-                                    self.add_action_button(ui, action2, legality2, [40.0, 20.0]);
-                                });
-                            }
-                        },
-                    );
-                });
+                self.add_action_buttons(ui);
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Ok(game_info) = self.state_receiver.try_recv() {
-                self.state = game_info.state;
-                self.other_state = game_info.other_state;
-                self.other_action = Some(game_info.other_action);
-                self.outcome = game_info.outcome;
-                if matches!(self.outcome, RoundOutcome::Continue) {
-                    self.is_active = true;
-                    self.update_legal_actions();
-                }
-            }
-
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 Self::show_state(ui, self.other_state);
                 if let Some(action) = self.other_action {
                     Self::show_action(ui, action);
-                } else {
-                    ui.label("");
                 }
+
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
                     let font_size = 36.0;
                     ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 15.0);
@@ -90,8 +67,6 @@ impl eframe::App for GUIApp {
                 Self::show_state(ui, self.state);
                 if let Some(action) = self.action {
                     Self::show_action(ui, action);
-                } else {
-                    ui.label("");
                 }
             });
         });
@@ -133,7 +108,38 @@ impl GUIApp {
         }
     }
 
-    fn add_action_button(&mut self, ui: &mut egui::Ui, action: Action, legality: bool, size: impl Into<egui::Vec2>) {
+    fn add_action_buttons(&mut self, ui: &mut egui::Ui) {
+        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+            let button_spacing = 5.0;
+            ui.allocate_ui_with_layout(
+                [40.0 * 5. + button_spacing * 4., 40.0 + button_spacing].into(),
+                egui::Layout::left_to_right(egui::Align::TOP),
+                |ui| {
+                    ui.style_mut().spacing.item_spacing = [button_spacing, button_spacing].into();
+                    let mut action_legality_iter = Self::ACTION_LIST.into_iter().zip(self.is_legal_action.into_iter());
+                    if let Some((action, legality)) = action_legality_iter.next() {
+                        self.add_single_action_button(ui, action, legality, [40.0, 40.0 + button_spacing]);
+                    }
+                    while let (Some((action1, legality1)), Some((action2, legality2))) =
+                        (action_legality_iter.next(), action_legality_iter.next())
+                    {
+                        ui.vertical(|ui| {
+                            self.add_single_action_button(ui, action1, legality1, [40.0, 20.0]);
+                            self.add_single_action_button(ui, action2, legality2, [40.0, 20.0]);
+                        });
+                    }
+                },
+            );
+        });
+    }
+
+    fn add_single_action_button(
+        &mut self,
+        ui: &mut egui::Ui,
+        action: Action,
+        legality: bool,
+        size: impl Into<egui::Vec2>,
+    ) {
         let color = Self::get_action_color(action);
         let text = Self::create_text(&action.to_string(), "noto", 12.5);
 
@@ -185,7 +191,7 @@ impl GUIApp {
         gui_app
     }
 
-    fn set_font(cc: &eframe::CreationContext<'_>) {
+    fn add_fonts(cc: &eframe::CreationContext<'_>) {
         const NOTO: &[u8] = include_bytes!("../fonts/NotoSansSC-Regular.otf");
         const SMILEY: &[u8] = include_bytes!("../fonts/SmileySans-Oblique.ttf");
         const DOUYIN: &[u8] = include_bytes!("../fonts/DouyinSansBold.otf");
@@ -220,7 +226,7 @@ impl GUIApp {
             native_options,
             Box::new(|cc| {
                 cc.egui_ctx.set_zoom_factor(2.0);
-                Self::set_font(cc);
+                Self::add_fonts(cc);
                 Ok(Box::new(Self::new()))
             }),
         )
