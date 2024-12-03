@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, Resource, INIT_STATE},
-    game::{GameInfo, RoundOutcome},
+    game::{Game, GameInfo, RoundOutcome},
+    player::{BotPlayer, GUIPlayer},
 };
 use eframe::egui;
 use std::{collections::BTreeMap, sync::mpsc};
@@ -72,13 +73,16 @@ impl eframe::App for GUIApp {
                 }
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
                     let font_size = 36.0;
-                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 5.0);
+                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 15.0);
                     let (text, color) = match self.outcome {
                         RoundOutcome::Continue => unreachable!(),
                         RoundOutcome::Win => ("胜", egui::Color32::GOLD),
                         RoundOutcome::Lose => ("负", egui::Color32::BROWN),
                     };
                     ui.label(Self::create_text(text, "wenkai", font_size).color(color));
+                    if ui.button(Self::create_text("再来一局", "noto", 12.5)).clicked() {
+                        *self = Self::new();
+                    }
                 }
             });
 
@@ -163,7 +167,9 @@ impl GUIApp {
             .size(size)
     }
 
-    fn new(state_receiver: mpsc::Receiver<GameInfo>, action_sender: mpsc::Sender<Action>) -> Self {
+    fn new() -> Self {
+        let (gui_player, state_receiver, action_sender) = GUIPlayer::new();
+        std::thread::spawn(move || Game::new().run_game(gui_player, BotPlayer));
         let mut gui_app = Self {
             state_receiver,
             action_sender,
@@ -204,7 +210,7 @@ impl GUIApp {
         cc.egui_ctx.set_fonts(fonts);
     }
 
-    pub fn run_gui(state_receiver: mpsc::Receiver<GameInfo>, action_sender: mpsc::Sender<Action>) {
+    pub fn run_gui() {
         let native_options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 600.0)),
             ..eframe::NativeOptions::default()
@@ -215,7 +221,7 @@ impl GUIApp {
             Box::new(|cc| {
                 cc.egui_ctx.set_zoom_factor(2.0);
                 Self::set_font(cc);
-                Ok(Box::new(Self::new(state_receiver, action_sender)))
+                Ok(Box::new(Self::new()))
             }),
         )
         .unwrap();
