@@ -73,14 +73,14 @@ impl eframe::App for GUIApp {
                     ui.label("");
                 }
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
-                    let font_size = 30.0;
-                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0);
-                    let text = match self.outcome {
+                    let font_size = 36.0;
+                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 5.0);
+                    let (text, color) = match self.outcome {
                         RoundOutcome::Continue => unreachable!(),
-                        RoundOutcome::Win => "胜",
-                        RoundOutcome::Lose => "负",
+                        RoundOutcome::Win => ("胜", egui::Color32::GOLD),
+                        RoundOutcome::Lose => ("负", egui::Color32::BROWN),
                     };
-                    ui.label(Self::create_text(text, "wenkai", font_size));
+                    ui.label(Self::create_text(text, "wenkai", font_size).color(color));
                 }
             });
 
@@ -122,13 +122,17 @@ impl GUIApp {
         }
     }
 
-    fn add_action_button(&mut self, ui: &mut egui::Ui, action: Action, legality: bool, size: impl Into<egui::Vec2>) {
-        let color = match action {
-            Action::Guahao => egui::Color32::LIGHT_BLUE,
+    fn get_action_color(action: Action) -> egui::Color32 {
+        match action {
+            Action::Guahao => egui::Color32::from_rgb(135, 206, 235), // Sky blue
             Action::Attack(_) => egui::Color32::LIGHT_RED,
             Action::Defend(_) => egui::Color32::LIGHT_GREEN,
-            Action::Fantan | Action::Quanfang => egui::Color32::GOLD,
-        };
+            Action::Fantan | Action::Quanfang => egui::Color32::ORANGE,
+        }
+    }
+
+    fn add_action_button(&mut self, ui: &mut egui::Ui, action: Action, legality: bool, size: impl Into<egui::Vec2>) {
+        let color = Self::get_action_color(action);
         let text = Self::create_text(&action.to_string(), "noto", 12.5);
 
         ui.add_enabled_ui(self.is_active && legality, |ui| {
@@ -145,15 +149,14 @@ impl GUIApp {
     }
 
     fn show_action(ui: &mut egui::Ui, action: Action) {
-        ui.label(Self::create_text(&action.to_string(), "smiley", 25.0));
+        ui.add_space(5.0);
+        let color = Self::get_action_color(action);
+        ui.label(Self::create_text(&action.to_string(), "smiley", 25.0).color(color));
     }
 
     fn show_state(ui: &mut egui::Ui, state: Resource) {
-        ui.label(Self::create_text(
-            &format!("挂号{}      全防{}      反弹{}", state[0], state[1], state[2]),
-            "wenkai",
-            15.0,
-        ));
+        let text = format!("挂号 {}     全防 {}     反弹 {}", state[0], state[1], state[2]);
+        ui.label(Self::create_text(&text, "wenkai", 15.0).color(egui::Color32::GRAY));
     }
 
     fn create_text(text: &str, family: &str, size: f32) -> egui::RichText {
