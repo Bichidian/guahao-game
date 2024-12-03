@@ -4,8 +4,6 @@ use crate::{
 };
 use eframe::egui;
 use std::{collections::BTreeMap, sync::mpsc};
-// use eframe::EventLoopBuilderHook;
-// use winit::platform::wayland::EventLoopBuilderExtWayland;
 
 pub struct GUIApp {
     state_receiver: mpsc::Receiver<GameInfo>,
@@ -207,11 +205,7 @@ impl GUIApp {
     }
 
     pub fn run_gui(state_receiver: mpsc::Receiver<GameInfo>, action_sender: mpsc::Sender<Action>) {
-        // let event_loop_builder: Option<EventLoopBuilderHook> = Some(Box::new(|event_loop_builder| {
-        //     event_loop_builder.with_any_thread(true);
-        // }));
         let native_options = eframe::NativeOptions {
-            // event_loop_builder,
             viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 600.0)),
             ..eframe::NativeOptions::default()
         };

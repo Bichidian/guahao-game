@@ -4,7 +4,6 @@ use rand;
 use rand::seq::IteratorRandom;
 use std::io;
 use std::sync::mpsc;
-// use std::thread;
 
 pub struct GUIPlayer {
     state_sender: mpsc::Sender<GameInfo>,
@@ -31,7 +30,6 @@ impl GUIPlayer {
             state_sender,
             action_receiver,
         };
-        // thread::spawn(|| GUIApp::run_gui(state_receiver, action_sender));
         (gui_player, state_receiver, action_sender)
     }
 }
