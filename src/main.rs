@@ -1,5 +1,4 @@
-mod action;
-mod game;
+mod basic;
 mod gui;
 mod player;
 

@@ -1,6 +1,5 @@
 use crate::{
-    action::{Action, Resource, INIT_STATE},
-    game::{Play, RoundOutcome},
+    basic::{Action, Resource, RoundOutcome, INIT_STATE},
     player::BotPlayer,
 };
 use eframe::egui;
@@ -94,6 +93,19 @@ impl GUIApp {
             RoundOutcome::Continue
         }
     }
+
+    fn update_legal_actions(&mut self) {
+        for (action, legality) in Self::ACTION_LIST.iter().zip(self.is_legal_action.as_mut()) {
+            let cost = action.get_cost();
+            *legality = true;
+            for (s, c) in self.state.iter().zip(cost.iter()) {
+                if *s < *c {
+                    *legality = false;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 impl GUIApp {
@@ -109,19 +121,6 @@ impl GUIApp {
         Action::Quanfang,
     ];
 
-    fn update_legal_actions(&mut self) {
-        for (action, legality) in Self::ACTION_LIST.iter().zip(self.is_legal_action.as_mut()) {
-            let cost = action.get_cost();
-            *legality = true;
-            for (s, c) in self.state.iter().zip(cost.iter()) {
-                if *s < *c {
-                    *legality = false;
-                    break;
-                }
-            }
-        }
-    }
-
     fn get_action_color(action: Action) -> egui::Color32 {
         match action {
             Action::Guahao => egui::Color32::from_rgb(135, 206, 235), // Sky blue
@@ -131,6 +130,14 @@ impl GUIApp {
         }
     }
 
+    fn create_text(text: &str, family: &str, size: f32) -> egui::RichText {
+        egui::RichText::new(text)
+            .family(egui::FontFamily::Name(family.into()))
+            .size(size)
+    }
+}
+
+impl GUIApp {
     fn add_action_buttons(&mut self, ui: &mut egui::Ui) {
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
             let button_spacing = 5.0;
@@ -171,7 +178,7 @@ impl GUIApp {
             ui.style_mut().visuals.widgets.inactive.bg_stroke = (1.0, color).into();
             if ui.add_sized(size, egui::Button::new(text)).clicked() {
                 self.action = Some(action);
-                self.other_action = Some(BotPlayer.get_action(self.other_state, self.state));
+                self.other_action = Some(BotPlayer::get_action(self.other_state, self.state));
                 self.update_state();
                 self.update_legal_actions();
             }
@@ -243,12 +250,6 @@ impl GUIApp {
         }
 
         cc.egui_ctx.set_fonts(fonts);
-    }
-
-    fn create_text(text: &str, family: &str, size: f32) -> egui::RichText {
-        egui::RichText::new(text)
-            .family(egui::FontFamily::Name(family.into()))
-            .size(size)
     }
 
     pub fn run_gui() {

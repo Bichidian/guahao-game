@@ -22,12 +22,6 @@ impl From<[i8; 3]> for Resource {
     }
 }
 
-impl fmt::Display for Resource {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "挂号{}，全防{}，反弹{}", self[0], self[1], self[2])
-    }
-}
-
 pub const INIT_STATE: Resource = Resource { 0: [0, 1, 1] };
 
 #[derive(Clone, Copy)]
@@ -37,32 +31,6 @@ pub enum Action {
     Defend(u8),
     Quanfang,
     Fantan,
-}
-
-pub struct ParseActionError;
-
-impl str::FromStr for Action {
-    type Err = ParseActionError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let act: Action = if let Ok(n) = s.parse::<i16>() {
-            if n > 0 {
-                Action::Attack(n as u8)
-            } else if n < 0 {
-                Action::Defend(-n as u8)
-            } else {
-                return Err(ParseActionError);
-            }
-        } else {
-            match s {
-                "g" => Action::Guahao,
-                "q" => Action::Quanfang,
-                "f" => Action::Fantan,
-                _ => return Err(ParseActionError),
-            }
-        };
-        Ok(act)
-    }
 }
 
 impl fmt::Display for Action {
@@ -95,4 +63,11 @@ impl Action {
         }
         .into()
     }
+}
+
+#[derive(Clone, Copy)]
+pub enum RoundOutcome {
+    Win,
+    Lose,
+    Continue,
 }

@@ -1,20 +1,17 @@
-use crate::action::{Action, Resource};
-use crate::game::Play;
+use crate::basic::{Action, Resource};
 use rand;
 use rand::seq::IteratorRandom;
 
 pub struct BotPlayer;
 
-impl Play for BotPlayer {
-    fn get_action(&self, state: Resource, other_state: Resource) -> Action {
+impl BotPlayer {
+    pub fn get_action(state: Resource, other_state: Resource) -> Action {
         let mut rng = rand::thread_rng();
-        let sensible_actions = self.list_sensible_actions(state, other_state);
+        let sensible_actions = Self::list_sensible_actions(state, other_state);
         sensible_actions.into_iter().choose(&mut rng).unwrap_or(Action::Guahao)
     }
-}
 
-impl BotPlayer {
-    fn list_sensible_actions(&self, state: Resource, other_state: Resource) -> Vec<Action> {
+    fn list_sensible_actions(state: Resource, other_state: Resource) -> Vec<Action> {
         let mut sensible_actions = vec![Action::Guahao];
         for a in 1..=state[0] {
             sensible_actions.push(Action::Attack(a as u8));
