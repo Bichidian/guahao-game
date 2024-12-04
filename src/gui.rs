@@ -230,16 +230,10 @@ impl GUIApp {
     fn add_fonts(cc: &eframe::CreationContext<'_>) {
         const NOTO: &[u8] = include_bytes!("../fonts/NotoSansSC-Regular.otf");
         const SMILEY: &[u8] = include_bytes!("../fonts/SmileySans-Oblique.ttf");
-        const DOUYIN: &[u8] = include_bytes!("../fonts/DouyinSansBold.otf");
         const WENKAI: &[u8] = include_bytes!("../fonts/lxgw-wenkai-gb-lite-v1.501/LXGWWenKaiMonoGBLite-Medium.ttf");
 
         let mut fonts = egui::FontDefinitions::default();
-        for (name, font) in [
-            ("noto", NOTO),
-            ("smiley", SMILEY),
-            ("douyin", DOUYIN),
-            ("wenkai", WENKAI),
-        ] {
+        for (name, font) in [("noto", NOTO), ("smiley", SMILEY), ("wenkai", WENKAI)] {
             fonts
                 .font_data
                 .insert(name.to_owned(), egui::FontData::from_static(font));
