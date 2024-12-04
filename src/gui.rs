@@ -49,17 +49,7 @@ impl eframe::App for GUIApp {
                 }
 
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
-                    let font_size = 36.0;
-                    ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 15.0);
-                    let (text, color) = match self.outcome {
-                        RoundOutcome::Continue => unreachable!(),
-                        RoundOutcome::Win => ("胜", egui::Color32::GOLD),
-                        RoundOutcome::Lose => ("负", egui::Color32::BROWN),
-                    };
-                    ui.label(Self::create_text(text, "wenkai", font_size).color(color));
-                    if ui.button(Self::create_text("再来一局", "noto", 12.5)).clicked() {
-                        *self = Self::new();
-                    }
+                    self.show_outcome(ui);
                 }
             });
 
@@ -167,12 +157,22 @@ impl GUIApp {
         ui.label(Self::create_text(&text, "wenkai", 15.0).color(egui::Color32::GRAY));
     }
 
-    fn create_text(text: &str, family: &str, size: f32) -> egui::RichText {
-        egui::RichText::new(text)
-            .family(egui::FontFamily::Name(family.into()))
-            .size(size)
+    fn show_outcome(&mut self, ui: &mut egui::Ui) {
+        let font_size = 36.0;
+        ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 15.0);
+        let (text, color) = match self.outcome {
+            RoundOutcome::Continue => unreachable!(),
+            RoundOutcome::Win => ("胜", egui::Color32::GOLD),
+            RoundOutcome::Lose => ("负", egui::Color32::BROWN),
+        };
+        ui.label(Self::create_text(text, "wenkai", font_size).color(color));
+        if ui.button(Self::create_text("再来一局", "noto", 12.5)).clicked() {
+            *self = Self::new();
+        }
     }
+}
 
+impl GUIApp {
     fn new() -> Self {
         let (gui_player, state_receiver, action_sender) = GUIPlayer::new();
         std::thread::spawn(move || Game::new().run_game(gui_player, BotPlayer));
@@ -216,9 +216,15 @@ impl GUIApp {
         cc.egui_ctx.set_fonts(fonts);
     }
 
+    fn create_text(text: &str, family: &str, size: f32) -> egui::RichText {
+        egui::RichText::new(text)
+            .family(egui::FontFamily::Name(family.into()))
+            .size(size)
+    }
+
     pub fn run_gui() {
         let native_options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 600.0)),
+            viewport: egui::ViewportBuilder::default().with_inner_size((600.0, 600.0)),
             ..eframe::NativeOptions::default()
         };
         eframe::run_native(
