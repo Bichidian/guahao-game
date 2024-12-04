@@ -1,14 +1,12 @@
 use crate::{
     action::{Action, Resource, INIT_STATE},
-    game::{Game, GameInfo, RoundOutcome},
-    player::{BotPlayer, GUIPlayer},
+    game::{Play, RoundOutcome},
+    player::BotPlayer,
 };
 use eframe::egui;
-use std::{collections::BTreeMap, sync::mpsc};
+use std::collections::BTreeMap;
 
 pub struct GUIApp {
-    state_receiver: mpsc::Receiver<GameInfo>,
-    action_sender: mpsc::Sender<Action>,
     is_active: bool,
     state: Resource,
     other_state: Resource,
@@ -20,17 +18,6 @@ pub struct GUIApp {
 
 impl eframe::App for GUIApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if let Ok(game_info) = self.state_receiver.try_recv() {
-            self.state = game_info.state;
-            self.other_state = game_info.other_state;
-            self.other_action = Some(game_info.other_action);
-            self.outcome = game_info.outcome;
-            if matches!(self.outcome, RoundOutcome::Continue) {
-                self.is_active = true;
-                self.update_legal_actions();
-            }
-        }
-
         egui::TopBottomPanel::bottom("button_panel")
             .frame(egui::Frame {
                 inner_margin: egui::Margin::symmetric(8.0, 8.0),
@@ -60,6 +47,52 @@ impl eframe::App for GUIApp {
                 }
             });
         });
+    }
+}
+
+impl GUIApp {
+    fn update_state(&mut self) {
+        let action = self.action.unwrap();
+        let other_action = self.other_action.unwrap();
+        for (s, c) in self.state.iter_mut().zip(action.get_cost().into_iter()) {
+            *s -= c;
+            if *s < 0 {
+                self.outcome = RoundOutcome::Lose;
+                return;
+            }
+        }
+
+        for (s, c) in self.other_state.iter_mut().zip(other_action.get_cost().into_iter()) {
+            *s -= c;
+            if *s < 0 {
+                self.outcome = RoundOutcome::Win;
+                return;
+            }
+        }
+
+        self.outcome = if let Action::Attack(a1) = action {
+            match other_action {
+                Action::Attack(a2) if a2 < a1 => RoundOutcome::Win,
+                Action::Attack(a2) if a2 == a1 => RoundOutcome::Continue,
+                Action::Attack(_) /* a2 > a1 */ => RoundOutcome::Lose,
+                Action::Defend(d2) if d2 == a1 => RoundOutcome::Continue,
+                Action::Defend(_) => RoundOutcome::Win,
+                Action::Guahao => RoundOutcome::Win,
+                Action::Quanfang => RoundOutcome::Continue,
+                Action::Fantan => RoundOutcome::Lose,
+            }
+        } else if let Action::Attack(a2) = other_action {
+            match action {
+                Action::Attack(_) => unreachable!(),
+                Action::Defend(d1) if d1 == a2 => RoundOutcome::Continue,
+                Action::Defend(_) => RoundOutcome::Lose,
+                Action::Guahao => RoundOutcome::Lose,
+                Action::Quanfang => RoundOutcome::Continue,
+                Action::Fantan => RoundOutcome::Win,
+            }
+        } else {
+            RoundOutcome::Continue
+        }
     }
 }
 
@@ -137,11 +170,10 @@ impl GUIApp {
             ui.style_mut().visuals.widgets.inactive.fg_stroke.color = color;
             ui.style_mut().visuals.widgets.inactive.bg_stroke = (1.0, color).into();
             if ui.add_sized(size, egui::Button::new(text)).clicked() {
-                self.action_sender.send(action).unwrap_or_else(|_| {
-                    eprintln!("游戏已关闭");
-                });
                 self.action = Some(action);
-                self.is_active = false;
+                self.other_action = Some(BotPlayer.get_action(self.other_state, self.state));
+                self.update_state();
+                self.update_legal_actions();
             }
         });
     }
@@ -158,6 +190,7 @@ impl GUIApp {
     }
 
     fn show_outcome(&mut self, ui: &mut egui::Ui) {
+        self.is_active = false;
         let font_size = 36.0;
         ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 15.0);
         let (text, color) = match self.outcome {
@@ -174,11 +207,7 @@ impl GUIApp {
 
 impl GUIApp {
     fn new() -> Self {
-        let (gui_player, state_receiver, action_sender) = GUIPlayer::new();
-        std::thread::spawn(move || Game::new().run_game(gui_player, BotPlayer));
         let mut gui_app = Self {
-            state_receiver,
-            action_sender,
             is_active: true,
             state: INIT_STATE,
             other_state: INIT_STATE,
