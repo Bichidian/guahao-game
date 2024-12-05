@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>挂号游戏</title>
+  <style>
+    /* Allow canvas to fill entire web page: */
+    html,
+    body {
+      overflow: hidden;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 100%;
+      width: 100%;
+    }
+
+    /* Make canvas fill entire document: */
+    canvas {
+      margin-right: auto;
+      margin-left: auto;
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <script type="module">
+    import init, * as wasm from "./pkg/guahao_game.js";
+    await init();
+    wasm.start();
+  </script>
+</body>
+
+</html>

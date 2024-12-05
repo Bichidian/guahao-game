@@ -246,6 +246,16 @@ impl GUIApp {
         cc.egui_ctx.set_fonts(fonts);
     }
 
+    pub fn create_app(
+        cc: &eframe::CreationContext<'_>,
+    ) -> Result<Box<dyn eframe::App>, Box<dyn std::error::Error + Send + Sync>> {
+        cc.egui_ctx.set_zoom_factor(2.0);
+        cc.egui_ctx.set_theme(egui::Theme::Dark);
+        Self::add_fonts(cc);
+        Ok(Box::new(Self::new()))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn run_gui() {
         let native_options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size((600.0, 600.0)),
