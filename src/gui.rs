@@ -20,7 +20,7 @@ impl eframe::App for GUIApp {
         egui::TopBottomPanel::bottom("button_panel")
             .frame(egui::Frame {
                 inner_margin: egui::Margin::symmetric(8.0, 8.0),
-                fill: egui::Color32::from_gray(27),
+                fill: egui::Visuals::dark().panel_fill,
                 ..Default::default()
             })
             .show(ctx, |ui| {
@@ -253,23 +253,5 @@ impl GUIApp {
         cc.egui_ctx.set_theme(egui::Theme::Dark);
         Self::add_fonts(cc);
         Ok(Box::new(Self::new()))
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn run_gui() {
-        let native_options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size((600.0, 600.0)),
-            ..eframe::NativeOptions::default()
-        };
-        eframe::run_native(
-            "挂号游戏",
-            native_options,
-            Box::new(|cc| {
-                cc.egui_ctx.set_zoom_factor(2.0);
-                Self::add_fonts(cc);
-                Ok(Box::new(Self::new()))
-            }),
-        )
-        .unwrap();
     }
 }

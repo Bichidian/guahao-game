@@ -3,12 +3,10 @@ name = "guahao-game"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 rand = "0.8"
-getrandom = { version = "0.2", features = ["js"] }
 eframe = "0.29"
-wasm-bindgen = "0.2"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen-futures = "0.4"

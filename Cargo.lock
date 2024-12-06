@@ -1345,7 +1345,6 @@ dependencies = [
  "eframe",
  "getrandom",
  "rand",
- "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
 
