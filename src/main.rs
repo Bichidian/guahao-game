@@ -25,5 +25,6 @@ fn main() {
             .start(canvas, eframe::WebOptions::default(), Box::new(gui::GUIApp::create_app))
             .await
             .unwrap();
+        document.get_element_by_id("loading_text").unwrap().remove();
     });
 }
