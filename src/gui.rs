@@ -29,21 +29,14 @@ impl eframe::App for GUIApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                Self::show_state(ui, self.other_state);
-                if let Some(action) = self.other_action {
-                    Self::show_action(ui, action);
-                }
-
+                Self::show_state_and_action(ui, self.other_state, self.other_action);
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
                     self.show_outcome(ui);
                 }
             });
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                Self::show_state(ui, self.state);
-                if let Some(action) = self.action {
-                    Self::show_action(ui, action);
-                }
+                Self::show_state_and_action(ui, self.state, self.action);
             });
         });
     }
@@ -186,7 +179,6 @@ impl GUIApp {
     }
 
     fn show_action(ui: &mut egui::Ui, action: Action) {
-        ui.add_space(5.0);
         let color = Self::get_action_color(action);
         ui.label(Self::create_text(&action.to_string(), "smiley", 25.0).color(color));
     }
@@ -194,6 +186,14 @@ impl GUIApp {
     fn show_state(ui: &mut egui::Ui, state: Resource) {
         let text = format!("挂号 {}     全防 {}     反弹 {}", state[0], state[1], state[2]);
         ui.label(Self::create_text(&text, "wenkai", 15.0).color(egui::Color32::GRAY));
+    }
+
+    fn show_state_and_action(ui: &mut egui::Ui, state: Resource, action: Option<Action>) {
+        Self::show_state(ui, state);
+        if let Some(action) = action {
+            ui.add_space(10.0);
+            Self::show_action(ui, action);
+        }
     }
 
     fn show_outcome(&mut self, ui: &mut egui::Ui) {
