@@ -12,20 +12,19 @@ pub struct GUIApp {
     action: Option<Action>,
     other_action: Option<Action>,
     outcome: RoundOutcome,
-    is_legal_action: [bool; Self::ACTION_LIST.len()],
+    is_legal_action: [bool; 9],
+    slider_value: u8,
 }
 
 impl eframe::App for GUIApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::bottom("button_panel")
-            .frame(egui::Frame {
-                inner_margin: egui::Margin::symmetric(8.0, 8.0),
-                fill: egui::Visuals::dark().panel_fill,
-                ..Default::default()
-            })
-            .show(ctx, |ui| {
+        egui::TopBottomPanel::bottom("button_panel").show(ctx, |ui| {
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                ui.add_space(5.0);
                 self.add_action_buttons(ui);
+                ui.add_space(5.0);
             });
+        });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
@@ -88,7 +87,7 @@ impl GUIApp {
     }
 
     fn update_legal_actions(&mut self) {
-        for (action, legality) in Self::ACTION_LIST.iter().zip(self.is_legal_action.as_mut()) {
+        for (action, legality) in self.get_action_list().iter().zip(self.is_legal_action.as_mut()) {
             let cost = action.get_cost();
             *legality = true;
             for (s, c) in self.state.iter().zip(cost.iter()) {
@@ -102,17 +101,19 @@ impl GUIApp {
 }
 
 impl GUIApp {
-    const ACTION_LIST: [Action; 9] = [
-        Action::Guahao,
-        Action::Attack(1),
-        Action::Defend(1),
-        Action::Attack(2),
-        Action::Defend(2),
-        Action::Attack(3),
-        Action::Defend(3),
-        Action::Fantan,
-        Action::Quanfang,
-    ];
+    fn get_action_list(&self) -> [Action; 9] {
+        [
+            Action::Guahao,
+            Action::Fantan,
+            Action::Quanfang,
+            Action::Attack(1),
+            Action::Defend(1),
+            Action::Attack(2),
+            Action::Defend(2),
+            Action::Attack(self.slider_value),
+            Action::Defend(self.slider_value),
+        ]
+    }
 
     fn get_action_color(action: Action) -> egui::Color32 {
         match action {
@@ -132,28 +133,43 @@ impl GUIApp {
 
 impl GUIApp {
     fn add_action_buttons(&mut self, ui: &mut egui::Ui) {
-        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            let button_spacing = 5.0;
-            ui.allocate_ui_with_layout(
-                [40.0 * 5. + button_spacing * 4., 40.0 + button_spacing].into(),
-                egui::Layout::left_to_right(egui::Align::TOP),
-                |ui| {
-                    ui.style_mut().spacing.item_spacing = [button_spacing, button_spacing].into();
-                    let mut action_legality_iter = Self::ACTION_LIST.into_iter().zip(self.is_legal_action.into_iter());
-                    if let Some((action, legality)) = action_legality_iter.next() {
-                        self.add_single_action_button(ui, action, legality, [40.0, 40.0 + button_spacing]);
-                    }
-                    while let (Some((action1, legality1)), Some((action2, legality2))) =
-                        (action_legality_iter.next(), action_legality_iter.next())
-                    {
-                        ui.vertical(|ui| {
-                            self.add_single_action_button(ui, action1, legality1, [40.0, 20.0]);
-                            self.add_single_action_button(ui, action2, legality2, [40.0, 20.0]);
-                        });
-                    }
-                },
-            );
-        });
+        let button_width = 40.0;
+        let button_height = 20.0;
+        let button_spacing = 5.0;
+        let total_height = button_height * 2.0 + button_spacing;
+        let slider_thickness = ui.spacing().interact_size.y; // Hard coded in egui::Slider, equals to 18.0 by default
+
+        ui.allocate_ui_with_layout(
+            [(button_width + button_spacing) * 5. + slider_thickness, total_height].into(),
+            egui::Layout::left_to_right(egui::Align::TOP),
+            |ui| {
+                ui.style_mut().spacing.item_spacing = [button_spacing, button_spacing].into();
+                let mut action_legality_iter = self.get_action_list().into_iter().zip(self.is_legal_action.into_iter());
+                if let Some((action, legality)) = action_legality_iter.next() {
+                    self.add_single_action_button(ui, action, legality, [button_width, total_height]);
+                }
+                while let (Some((action1, legality1)), Some((action2, legality2))) =
+                    (action_legality_iter.next(), action_legality_iter.next())
+                {
+                    ui.vertical(|ui| {
+                        self.add_single_action_button(ui, action1, legality1, [button_width, button_height]);
+                        self.add_single_action_button(ui, action2, legality2, [button_width, button_height]);
+                    });
+                }
+
+                ui.style_mut().spacing.slider_width = total_height;
+                let old_slider_value = self.slider_value;
+                ui.add(
+                    egui::Slider::new(&mut self.slider_value, 3..=8)
+                        .vertical()
+                        .show_value(false)
+                        .handle_shape(egui::style::HandleShape::Rect { aspect_ratio: 0.5 }),
+                );
+                if self.slider_value != old_slider_value {
+                    self.update_legal_actions();
+                }
+            },
+        );
     }
 
     fn add_single_action_button(
@@ -221,7 +237,8 @@ impl GUIApp {
             action: None,
             other_action: None,
             outcome: RoundOutcome::Continue,
-            is_legal_action: [false; Self::ACTION_LIST.len()],
+            is_legal_action: [false; 9],
+            slider_value: 3,
         };
         gui_app.update_legal_actions();
         gui_app
