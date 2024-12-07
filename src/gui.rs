@@ -106,10 +106,10 @@ impl GUIApp {
             Action::Guahao,
             Action::Fantan,
             Action::Quanfang,
+            Action::Attack(0),
+            Action::Defend(0),
             Action::Attack(1),
             Action::Defend(1),
-            Action::Attack(2),
-            Action::Defend(2),
             Action::Attack(self.slider_value),
             Action::Defend(self.slider_value),
         ]
@@ -160,7 +160,7 @@ impl GUIApp {
                 ui.style_mut().spacing.slider_width = total_height;
                 let old_slider_value = self.slider_value;
                 ui.add(
-                    egui::Slider::new(&mut self.slider_value, 3..=8)
+                    egui::Slider::new(&mut self.slider_value, 2..=8)
                         .vertical()
                         .show_value(false)
                         .handle_shape(egui::style::HandleShape::Rect { aspect_ratio: 0.5 }),
@@ -238,7 +238,7 @@ impl GUIApp {
             other_action: None,
             outcome: RoundOutcome::Continue,
             is_legal_action: [false; 9],
-            slider_value: 3,
+            slider_value: 2,
         };
         gui_app.update_legal_actions();
         gui_app

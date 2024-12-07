@@ -13,10 +13,10 @@ impl BotPlayer {
 
     fn list_sensible_actions(state: Resource, other_state: Resource) -> Vec<Action> {
         let mut sensible_actions = vec![Action::Guahao];
-        for a in 1..=state[0] {
+        for a in 0..state[0] {
             sensible_actions.push(Action::Attack(a as u8));
         }
-        for d in 1..=other_state[0] {
+        for d in 0..other_state[0] {
             sensible_actions.push(Action::Defend(d as u8));
         }
         if other_state[0] > 1 && state[1] > 0 {
