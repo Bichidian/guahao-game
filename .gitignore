@@ -1,6 +1,6 @@
 /target
 /dist
-/fonts
+/fonts/complete-fonts
 /.cargo
 /.vscode
 rustfmt.toml
