@@ -4,6 +4,7 @@ use crate::{
 };
 use eframe::egui;
 use std::collections::BTreeMap;
+use web_time::Instant; // Same as std::time::Instant when not targeting wasm32-unknown-unknown
 
 pub struct GUIApp {
     is_active: bool,
@@ -14,6 +15,7 @@ pub struct GUIApp {
     outcome: RoundOutcome,
     is_legal_action: [bool; 9],
     slider_value: u8,
+    last_action_instant: Instant,
 }
 
 impl eframe::App for GUIApp {
@@ -28,14 +30,17 @@ impl eframe::App for GUIApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                Self::show_state_and_action(ui, self.other_state, self.other_action);
+                self.show_state_and_action(ui, self.other_state, self.other_action);
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
-                    self.show_outcome(ui);
+                    self.is_active = false;
+                    if self.last_action_instant.elapsed().as_secs_f32() > 0.1 {
+                        self.show_outcome(ui);
+                    }
                 }
             });
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                Self::show_state_and_action(ui, self.state, self.action);
+                self.show_state_and_action(ui, self.state, self.action);
             });
         });
     }
@@ -190,13 +195,21 @@ impl GUIApp {
                 self.other_action = Some(BotPlayer::get_action(self.other_state, self.state));
                 self.update_state();
                 self.update_legal_actions();
+                self.last_action_instant = Instant::now();
             }
         });
     }
 
-    fn show_action(ui: &mut egui::Ui, action: Action) {
+    fn show_action(&self, ui: &mut egui::Ui, action: Action) {
         let color = Self::get_action_color(action);
-        ui.label(Self::create_text(&action.to_string(), "smiley", 25.0).color(color));
+        let mut frac = self.last_action_instant.elapsed().as_secs_f32() / 0.1;
+        if frac < 1.0 {
+            frac = 1.0 - (1.0 - frac).powi(2);
+            ui.ctx().request_repaint();
+        } else {
+            frac = 1.0;
+        }
+        ui.label(Self::create_text(&action.to_string(), "smiley", frac * 25.0).color(color));
     }
 
     fn show_state(ui: &mut egui::Ui, state: Resource) {
@@ -204,16 +217,15 @@ impl GUIApp {
         ui.label(Self::create_text(&text, "wenkai", 15.0).color(egui::Color32::GRAY));
     }
 
-    fn show_state_and_action(ui: &mut egui::Ui, state: Resource, action: Option<Action>) {
+    fn show_state_and_action(&self, ui: &mut egui::Ui, state: Resource, action: Option<Action>) {
         Self::show_state(ui, state);
         if let Some(action) = action {
             ui.add_space(10.0);
-            Self::show_action(ui, action);
+            self.show_action(ui, action);
         }
     }
 
     fn show_outcome(&mut self, ui: &mut egui::Ui) {
-        self.is_active = false;
         let font_size = 36.0;
         ui.add_space(ui.max_rect().size().y / 2.0 - ui.min_rect().size().y - font_size / 2.0 - 15.0);
         let (text, color) = match self.outcome {
@@ -239,6 +251,7 @@ impl GUIApp {
             outcome: RoundOutcome::Continue,
             is_legal_action: [false; 9],
             slider_value: 2,
+            last_action_instant: Instant::now(),
         };
         gui_app.update_legal_actions();
         gui_app

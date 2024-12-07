@@ -1346,6 +1346,7 @@ dependencies = [
  "getrandom",
  "rand",
  "wasm-bindgen-futures",
+ "web-time",
 ]
 
 [[package]]
