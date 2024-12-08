@@ -16,6 +16,7 @@ pub struct GUIApp {
     is_legal_action: [bool; 9],
     slider_value: u8,
     last_action_instant: Instant,
+    action_display_frac: f32,
 }
 
 impl eframe::App for GUIApp {
@@ -29,6 +30,8 @@ impl eframe::App for GUIApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            self.set_action_frac(ui);
+
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 self.show_state_and_action(ui, self.other_state, self.other_action);
                 if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
@@ -200,16 +203,20 @@ impl GUIApp {
         });
     }
 
+    fn set_action_frac(&mut self, ui: &mut egui::Ui) {
+        let frac = self.last_action_instant.elapsed().as_secs_f32() / 0.1;
+        if frac < 1.0 {
+            ui.ctx().request_repaint();
+            self.action_display_frac = (2.0 - frac) * frac;
+        } else {
+            self.action_display_frac = 1.0;
+        }
+    }
+
     fn show_action(&self, ui: &mut egui::Ui, action: Action) {
         let color = Self::get_action_color(action);
-        let mut frac = self.last_action_instant.elapsed().as_secs_f32() / 0.1;
-        if frac < 1.0 {
-            frac = 1.0 - (1.0 - frac).powi(2);
-            ui.ctx().request_repaint();
-        } else {
-            frac = 1.0;
-        }
-        ui.label(Self::create_text(&action.to_string(), "smiley", frac * 25.0).color(color));
+        let size = self.action_display_frac * 25.0;
+        ui.label(Self::create_text(&action.to_string(), "smiley", size).color(color));
     }
 
     fn show_state(ui: &mut egui::Ui, state: Resource) {
@@ -252,6 +259,7 @@ impl GUIApp {
             is_legal_action: [false; 9],
             slider_value: 2,
             last_action_instant: Instant::now(),
+            action_display_frac: 0.0,
         };
         gui_app.update_legal_actions();
         gui_app
