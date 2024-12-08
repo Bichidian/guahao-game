@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 use web_time::Instant; // Same as std::time::Instant when not targeting wasm32-unknown-unknown
 
 pub struct GUIApp {
-    is_active: bool,
     state: Resource,
     other_state: Resource,
     action: Option<Action>,
@@ -23,6 +22,9 @@ impl eframe::App for GUIApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::bottom("button_panel").show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                if self.outcome != RoundOutcome::Continue {
+                    ui.disable();
+                }
                 ui.add_space(5.0);
                 self.add_action_buttons(ui);
                 ui.add_space(5.0);
@@ -30,15 +32,12 @@ impl eframe::App for GUIApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.set_action_frac(ui);
+            self.set_action_display_frac(ui);
 
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 self.show_state_and_action(ui, self.other_state, self.other_action);
-                if matches!(self.outcome, RoundOutcome::Win | RoundOutcome::Lose) {
-                    self.is_active = false;
-                    if self.last_action_instant.elapsed().as_secs_f32() > 0.1 {
-                        self.show_outcome(ui);
-                    }
+                if self.outcome != RoundOutcome::Continue && self.last_action_instant.elapsed().as_secs_f32() > 0.1 {
+                    self.show_outcome(ui);
                 }
             });
 
@@ -190,7 +189,7 @@ impl GUIApp {
         let color = Self::get_action_color(action);
         let text = Self::create_text(&action.to_string(), "noto", 12.5);
 
-        ui.add_enabled_ui(self.is_active && legality, |ui| {
+        ui.add_enabled_ui(legality, |ui| {
             ui.style_mut().visuals.widgets.inactive.fg_stroke.color = color;
             ui.style_mut().visuals.widgets.inactive.bg_stroke = (1.0, color).into();
             if ui.add_sized(size, egui::Button::new(text)).clicked() {
@@ -203,7 +202,7 @@ impl GUIApp {
         });
     }
 
-    fn set_action_frac(&mut self, ui: &mut egui::Ui) {
+    fn set_action_display_frac(&mut self, ui: &mut egui::Ui) {
         let frac = self.last_action_instant.elapsed().as_secs_f32() / 0.1;
         if frac < 1.0 {
             ui.ctx().request_repaint();
@@ -250,7 +249,6 @@ impl GUIApp {
 impl GUIApp {
     fn new() -> Self {
         let mut gui_app = Self {
-            is_active: true,
             state: INIT_STATE,
             other_state: INIT_STATE,
             action: None,

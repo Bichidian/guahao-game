@@ -65,7 +65,7 @@ impl Action {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RoundOutcome {
     Win,
     Lose,
