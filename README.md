@@ -1,5 +1,7 @@
 # 挂号游戏 guahao-game
 
+[点击此处在线玩游戏](https://bichidian.github.io/guahao-game-dist/)
+
 ## 游戏规则
 
 游戏中有两名玩家。一局游戏由若干轮构成，每轮双方同时出招。
@@ -14,13 +16,13 @@
 
 ## 从源码编译并运行
 
-克隆此git仓库后，在仓库根目录执行：
+克隆此 git 仓库后，在仓库根目录执行：
 
 ```bash
 cargo run
 ```
 
-如果想生成网页版，请安装[trunk](https://trunkrs.dev/)并执行：
+如果想生成网页版，请安装 [trunk](https://trunkrs.dev/) 并执行：
 
 ```bash
 trunk serve
