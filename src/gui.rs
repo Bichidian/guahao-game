@@ -268,7 +268,7 @@ impl GUIApp {
         const SMILEY: &[u8] = include_bytes!("../fonts/SmileySans-Oblique.subset.ttf");
         const WENKAI: &[u8] = include_bytes!("../fonts/LXGWWenKaiMonoGBLite-Medium.subset.ttf");
 
-        let mut fonts = egui::FontDefinitions::default();
+        let mut fonts = egui::FontDefinitions::empty();
         for (name, font) in [("noto", NOTO), ("smiley", SMILEY), ("wenkai", WENKAI)] {
             fonts
                 .font_data

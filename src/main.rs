@@ -28,3 +28,4 @@ fn main() {
         document.get_element_by_id("loading_text").unwrap().remove();
     });
 }
+// Run `trunk build --release --public-url=./` for deploying to GitHub Pages
