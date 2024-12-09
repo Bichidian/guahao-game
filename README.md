@@ -16,7 +16,7 @@
 
 ## 从源码编译并运行
 
-克隆此 git 仓库后，在仓库根目录执行：
+安装 [rust](https://www.rust-lang.org/) 并在本 git 仓库的根目录执行：
 
 ```bash
 cargo run
