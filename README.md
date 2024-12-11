@@ -1,6 +1,6 @@
 # 挂号游戏 guahao-game
 
-[点击此处在线玩游戏](https://bichidian.github.io/guahao-game-dist/)
+[点击此处在线玩游戏](https://bichidian.github.io/guahao-game/)
 
 ## 游戏规则
 
