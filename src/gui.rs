@@ -14,8 +14,8 @@ pub struct GUIApp {
     outcome: RoundOutcome,
     is_legal_action: [bool; 9],
     slider_value: u8,
-    last_action_instant: Instant,
-    action_display_frac: f32,
+    last_action_instant: Instant, // For animating the action
+    action_display_frac: f32,     // For animating the action
 }
 
 impl eframe::App for GUIApp {
@@ -37,6 +37,7 @@ impl eframe::App for GUIApp {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 self.show_state_and_action(ui, self.other_state, self.other_action);
                 if self.outcome != RoundOutcome::Continue && self.last_action_instant.elapsed().as_secs_f32() > 0.1 {
+                    // Show outcome after action animation (0.1 second)
                     self.show_outcome(ui);
                 }
             });
@@ -146,6 +147,7 @@ impl GUIApp {
         let total_height = button_height * 2.0 + button_spacing;
         let slider_thickness = ui.spacing().interact_size.y; // Hard coded in egui::Slider, equals to 18.0 by default
 
+        // egui cannot automatically center a group of widgets, need to put them in a Ui with known size
         ui.allocate_ui_with_layout(
             [(button_width + button_spacing) * 5. + slider_thickness, total_height].into(),
             egui::Layout::left_to_right(egui::Align::TOP),
@@ -167,7 +169,7 @@ impl GUIApp {
                 ui.style_mut().spacing.slider_width = total_height;
                 let old_slider_value = self.slider_value;
                 ui.add(
-                    egui::Slider::new(&mut self.slider_value, 2..=8)
+                    egui::Slider::new(&mut self.slider_value, 2..=8) // Minimum the 3rd attack/defend
                         .vertical()
                         .show_value(false)
                         .handle_shape(egui::style::HandleShape::Rect { aspect_ratio: 0.5 }),
@@ -203,10 +205,10 @@ impl GUIApp {
     }
 
     fn set_action_display_frac(&mut self, ui: &mut egui::Ui) {
-        let frac = self.last_action_instant.elapsed().as_secs_f32() / 0.1;
+        let frac = self.last_action_instant.elapsed().as_secs_f32() / 0.1; // Animate for 0.1 second
         if frac < 1.0 {
             ui.ctx().request_repaint();
-            self.action_display_frac = (2.0 - frac) * frac;
+            self.action_display_frac = (2.0 - frac) * frac; // Reach frac == 1 smoothly
         } else {
             self.action_display_frac = 1.0;
         }
@@ -286,7 +288,7 @@ impl GUIApp {
         cc: &eframe::CreationContext<'_>,
     ) -> Result<Box<dyn eframe::App>, Box<dyn std::error::Error + Send + Sync>> {
         cc.egui_ctx.set_zoom_factor(2.0);
-        cc.egui_ctx.set_theme(egui::Theme::Dark);
+        cc.egui_ctx.set_theme(egui::Theme::Dark); // This seems to be the default for native but not for web
         Self::add_fonts(cc);
         Ok(Box::new(Self::new()))
     }

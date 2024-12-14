@@ -1,7 +1,7 @@
 use std::{fmt, ops, str};
 
 #[derive(Clone, Copy)]
-pub struct Resource([i8; 3]);
+pub struct Resource([i8; 3]); // [挂号数, 全防数, 反弹数]
 
 impl ops::Deref for Resource {
     type Target = [i8; 3];
